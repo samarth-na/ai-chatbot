@@ -115,6 +115,8 @@ function App() {
 
 	return (
 		<div className="flex flex-col flex-1 gap-2">
+			{" "}
+			{/* main wrpper*/}
 			<div className="overflow-hidden top-0 flex-1 mb-36">
 				<div className="flex flex-col p-4 min-w-[700px] border border-gray-200 mx-auto rounded-b-xl w-[50%] bg-white  h-full">
 					<h1 className="mb-4 text-xl text-gray-800">Ollama Chat</h1>
@@ -145,25 +147,24 @@ function App() {
 					</div>
 				</div>
 			</div>
-
 			{/* Input Area - Fixed at bottom */}
-			<div className="left-1/2 transform -translate-x-1/2 flex flex-col fixed bottom-0 min-w-[700px] rounded-md w-[50%]">
-				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
-					<button
-						type="submit"
-						disabled={isLoading}
-						className="text-sm text-gray-500 rounded-lg cursor-pointer"
-					>
-						{isLoading ? "Sending..." : "Ctrl󰌑 or click to send "}
-					</button>
+			<div className="left-1/2 transform bg-white -translate-x-1/2 flex flex-col fixed bottom-0 min-w-[700px] rounded-md w-[50%]">
+				<form onSubmit={handleSubmit} className="flex flex-col">
 					<textarea
 						ref={textareaRef}
 						value={prompt}
 						onChange={(e) => setPrompt(e.target.value)}
 						placeholder="Type message"
 						rows="3"
-						className="flex-1 p-2 mb-4 bg-gray-100 rounded-xl border border-gray-200"
+						className="flex-1 p-2 px-3 mb-2 bg-gray-100 rounded-xl border border-gray-200"
 					/>
+					<button
+						type="submit"
+						disabled={isLoading}
+						className="mb-2 text-sm text-gray-500 rounded-lg cursor-pointer"
+					>
+						{isLoading ? "Sending..." : "Ctrl󰌑 or click to send "}
+					</button>
 				</form>
 			</div>
 		</div>

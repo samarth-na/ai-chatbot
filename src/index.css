@@ -7,16 +7,13 @@
 	}
 
 	body {
-		@apply mt-12 font-sans antialiased text-center align-middle;
+		@apply font-sans antialiased text-left align-middle;
 	}
 
 	input::placeholder {
 		@apply text-gray-400;
 	}
 
-	button:disabled {
-		@apply bg-gray-300  cursor-not-allowed;
-	}
 	textarea {
 		@apply p-2 mb-10 w-full rounded-sm bg-white;
 	}
