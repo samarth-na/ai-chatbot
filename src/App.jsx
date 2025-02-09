@@ -114,9 +114,9 @@ function App() {
 	}, [messages]);
 
 	return (
-		<div className="flex flex-col">
-			<div className="overflow-hidden flex-1">
-				<div className="flex flex-col p-4 mx-auto max-w-3xl h-full">
+		<div className="flex flex-col flex-1 gap-2">
+			<div className="overflow-hidden top-0 flex-1 mb-36">
+				<div className="flex flex-col p-4 min-w-[700px] border border-gray-200 mx-auto rounded-b-xl w-[50%] bg-white  h-full">
 					<h1 className="mb-4 text-xl text-gray-800">Ollama Chat</h1>
 
 					{/* Chat Messages */}
@@ -133,7 +133,7 @@ function App() {
 									className={`max-w-[80%] rounded-xl px-3 py-2  ${
 										message.role === "user"
 											? "bg-blue-100/50 text-gray-800"
-											: "bg-gray-100 text-gray-800"
+											: " text-gray-800"
 									}`}
 								>
 									<p className="whitespace-pre-wrap">
@@ -147,27 +147,24 @@ function App() {
 			</div>
 
 			{/* Input Area - Fixed at bottom */}
-			<div className="px-4 mx-auto max-w-3xl w-[60%] min-w-[600px]">
+			<div className="left-1/2 transform -translate-x-1/2 flex flex-col fixed bottom-0 min-w-[700px] rounded-md w-[50%]">
 				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
 					<button
 						type="submit"
 						disabled={isLoading}
-						className="py-2 px-4 text-gray-500 rounded-lg"
+						className="text-sm text-gray-500 rounded-lg cursor-pointer"
 					>
-						{isLoading
-							? "Sending..."
-							: "Ctrl󰌑 or click to send text-sm"}
+						{isLoading ? "Sending..." : "Ctrl󰌑 or click to send "}
 					</button>
 					<textarea
 						ref={textareaRef}
 						value={prompt}
 						onChange={(e) => setPrompt(e.target.value)}
 						placeholder="Type message"
-						rows="2"
+						rows="3"
 						className="flex-1 p-2 mb-4 bg-gray-100 rounded-xl border border-gray-200"
 					/>
 				</form>
-				<p className="mt-1 text-sm text-gray-500"></p>
 			</div>
 		</div>
 	);
