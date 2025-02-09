@@ -14,11 +14,8 @@
 		@apply text-gray-400;
 	}
 
-	button:disabled {
-		@apply bg-gray-300  cursor-not-allowed;
-	}
 	textarea {
-		@apply p-2 mb-10 w-full rounded-sm bg-white;
+		outline: none;
 	}
 	textarea:focus {
 		outline: none;

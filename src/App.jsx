@@ -68,7 +68,7 @@ function App() {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					model: "tinyllama",
+					model: "llama3.2:1b",
 					prompt: prompt,
 				}),
 			});
@@ -114,12 +114,10 @@ function App() {
 	}, [messages]);
 
 	return (
-		<div className="flex flex-col h-screen bg-gray-50">
+		<div className="flex flex-col">
 			<div className="overflow-hidden flex-1">
 				<div className="flex flex-col p-4 mx-auto max-w-3xl h-full">
-					<h1 className="mb-4 text-2xl font-bold text-gray-800">
-						Ollama Chat
-					</h1>
+					<h1 className="mb-4 text-xl text-gray-800">Ollama Chat</h1>
 
 					{/* Chat Messages */}
 					<div
@@ -132,10 +130,10 @@ function App() {
 								className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
 							>
 								<div
-									className={`max-w-[80%] rounded-lg p-3 ${
+									className={`max-w-[80%] rounded-xl px-3 py-2  ${
 										message.role === "user"
-											? "bg-blue-500 text-white"
-											: "bg-gray-200 text-gray-800"
+											? "bg-blue-100/50 text-gray-800"
+											: "bg-gray-100 text-gray-800"
 									}`}
 								>
 									<p className="whitespace-pre-wrap">
@@ -149,29 +147,27 @@ function App() {
 			</div>
 
 			{/* Input Area - Fixed at bottom */}
-			<div className="py-4 bg-white border-t border-gray-200">
-				<div className="px-4 mx-auto max-w-3xl">
-					<form onSubmit={handleSubmit} className="flex gap-2">
-						<textarea
-							ref={textareaRef}
-							value={prompt}
-							onChange={(e) => setPrompt(e.target.value)}
-							placeholder="Type your message..."
-							rows="2"
-							className="flex-1 p-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
-						/>
-						<button
-							type="submit"
-							disabled={isLoading}
-							className="py-2 px-4 text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
-						>
-							{isLoading ? "Sending..." : "Send"}
-						</button>
-					</form>
-					<p className="mt-1 text-sm text-gray-500">
-						Ctrl + Enter to send
-					</p>
-				</div>
+			<div className="px-4 mx-auto max-w-3xl w-[60%] min-w-[600px]">
+				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
+					<button
+						type="submit"
+						disabled={isLoading}
+						className="py-2 px-4 text-gray-500 rounded-lg"
+					>
+						{isLoading
+							? "Sending..."
+							: "Ctrl󰌑 or click to send text-sm"}
+					</button>
+					<textarea
+						ref={textareaRef}
+						value={prompt}
+						onChange={(e) => setPrompt(e.target.value)}
+						placeholder="Type message"
+						rows="2"
+						className="flex-1 p-2 mb-4 bg-gray-100 rounded-xl border border-gray-200"
+					/>
+				</form>
+				<p className="mt-1 text-sm text-gray-500"></p>
 			</div>
 		</div>
 	);
