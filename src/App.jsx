@@ -2,21 +2,73 @@ import React, { useState, useEffect, useRef } from "react";
 
 function App() {
 	const [prompt, setPrompt] = useState("");
-	const [response, setResponse] = useState("");
+	const [messages, setMessages] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const textareaRef = useRef(null);
+	const chatContainerRef = useRef(null);
 
-	async function handleSubmit(e) {
-		if (e) e.preventDefault(); // Prevent default form submission
+	// Handle streaming response from Ollama
+	const handleStream = async (reader) => {
+		const decoder = new TextDecoder("utf-8");
+		let buffer = "";
+		let botMessage = "";
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split("\n");
+
+			for (let i = 0; i < lines.length - 1; i++) {
+				const line = lines[i].trim();
+				if (!line) continue;
+
+				try {
+					const parsed = JSON.parse(line);
+					botMessage += parsed.response;
+					setMessages((prev) => {
+						const lastMessage = prev[prev.length - 1];
+						if (lastMessage.role === "bot") {
+							return [
+								...prev.slice(0, -1),
+								{ ...lastMessage, content: botMessage },
+							];
+						}
+						return prev;
+					});
+
+					if (parsed.done) {
+						reader.cancel();
+						break;
+					}
+				} catch (err) {
+					console.error("JSON parse error:", line, err);
+				}
+			}
+
+			buffer = lines[lines.length - 1];
+		}
+	};
+
+	const handleSubmit = async (e) => {
+		if (e) e.preventDefault();
+		if (!prompt.trim()) return;
+
 		setIsLoading(true);
-		setResponse(""); // Clear previous responses
+		setMessages((prev) => [
+			...prev,
+			{ role: "user", content: prompt },
+			{ role: "bot", content: "" },
+		]);
+		setPrompt("");
 
 		try {
 			const res = await fetch("http://localhost:11434/api/generate", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					model: "llama3.2:1b",
+					model: "tinyllama",
 					prompt: prompt,
 				}),
 			});
@@ -28,89 +80,99 @@ function App() {
 			if (!res.body)
 				throw new Error("Streaming not supported or no body returned.");
 
-			const reader = res.body.getReader();
-			const decoder = new TextDecoder("utf-8");
-			let buffer = "";
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split("\n");
-
-				for (let i = 0; i < lines.length - 1; i++) {
-					const line = lines[i].trim();
-					if (!line) continue;
-
-					try {
-						const parsed = JSON.parse(line);
-						setResponse((prev) => prev + parsed.response);
-						if (parsed.done) {
-							reader.cancel();
-							break;
-						}
-					} catch (err) {
-						console.error("JSON parse error:", line, err);
-					}
-				}
-
-				buffer = lines[lines.length - 1];
-			}
+			await handleStream(res.body.getReader());
 		} catch (error) {
 			console.error("Error:", error);
-			setResponse(`Error: ${error.message}`);
+			setMessages((prev) => [
+				...prev,
+				{ role: "bot", content: `Error: ${error.message}` },
+			]);
 		} finally {
 			setIsLoading(false);
 		}
-	}
+	};
 
-	// Fix for Ctrl+Enter: Ensure `handleSubmit` is in the dependency array
+	// Keyboard shortcut and auto-scroll effects
 	useEffect(() => {
 		const textarea = textareaRef.current;
 		const handleKeyDown = (event) => {
 			if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-				event.preventDefault(); // Prevent default textarea behavior
-				handleSubmit(); // Manually trigger submission
+				event.preventDefault();
+				handleSubmit();
 			}
 		};
 
 		textarea.addEventListener("keydown", handleKeyDown);
 		return () => textarea.removeEventListener("keydown", handleKeyDown);
-	}, [handleSubmit]); // Include handleSubmit in dependencies
+	}, [handleSubmit]);
+
+	useEffect(() => {
+		if (chatContainerRef.current) {
+			chatContainerRef.current.scrollTop =
+				chatContainerRef.current.scrollHeight;
+		}
+	}, [messages]);
 
 	return (
-		<div className="p-5 mx-auto max-w-[800px]">
-			<h1 className="mb-5 text-xl font-bold">Ollama Web UI</h1>
+		<div className="flex flex-col h-screen bg-gray-50">
+			<div className="overflow-hidden flex-1">
+				<div className="flex flex-col p-4 mx-auto max-w-3xl h-full">
+					<h1 className="mb-4 text-2xl font-bold text-gray-800">
+						Ollama Chat
+					</h1>
 
-			{response && (
-				<div className="p-5 mt-10 bg-white rounded-sm hover:ring-2 ring-blue-900/90">
-					<h2></h2>
-					{/* Add the response text here! */}
-					<p className="mt-2 text-left whitespace-pre-wrap">
-						{response}
+					{/* Chat Messages */}
+					<div
+						ref={chatContainerRef}
+						className="overflow-y-auto flex-1 pr-2 space-y-4"
+					>
+						{messages.map((message, index) => (
+							<div
+								key={index}
+								className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+							>
+								<div
+									className={`max-w-[80%] rounded-lg p-3 ${
+										message.role === "user"
+											? "bg-blue-500 text-white"
+											: "bg-gray-200 text-gray-800"
+									}`}
+								>
+									<p className="whitespace-pre-wrap">
+										{message.content}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			</div>
+
+			{/* Input Area - Fixed at bottom */}
+			<div className="py-4 bg-white border-t border-gray-200">
+				<div className="px-4 mx-auto max-w-3xl">
+					<form onSubmit={handleSubmit} className="flex gap-2">
+						<textarea
+							ref={textareaRef}
+							value={prompt}
+							onChange={(e) => setPrompt(e.target.value)}
+							placeholder="Type your message..."
+							rows="2"
+							className="flex-1 p-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						/>
+						<button
+							type="submit"
+							disabled={isLoading}
+							className="py-2 px-4 text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+						>
+							{isLoading ? "Sending..." : "Send"}
+						</button>
+					</form>
+					<p className="mt-1 text-sm text-gray-500">
+						Ctrl + Enter to send
 					</p>
 				</div>
-			)}
-			<form onSubmit={handleSubmit}>
-				<textarea
-					ref={textareaRef}
-					value={prompt}
-					onChange={(e) => setPrompt(e.target.value)}
-					placeholder="Enter your prompt here..."
-					className="p-2 mb-10 w-full ring-2 shadow-xl ring-blue-900/90"
-					rows="2"
-				/>
-				<button
-					type="submit"
-					disabled={isLoading}
-					className={`text-gray-500 rounded-sm  cursor-pointer   ${isLoading ? "bg-gray-50" : ""}`}
-				>
-					{isLoading
-						? "loading response"
-						: "click or ctrl󰌑 to submit"}
-				</button>
-			</form>
+			</div>
 		</div>
 	);
 }
