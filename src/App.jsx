@@ -1,82 +1,134 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+
+// This example uses fetch and reads the streaming response from Ollama
+// as line-delimited JSON objects. For each line:
+//   { "model":"...", "response":"...", "done":false/true, ... }
+// When "done" is true, the loop is stopped.
 
 function App() {
-	const [prompt, setPrompt] = useState(""); // State for the input prompt
-	const [response, setResponse] = useState(""); // State for the response from the API
-	const [isLoading, setIsLoading] = useState(false); // State to manage loading state
-	const textareaRef = useRef(null); // Ref for the textarea
+	const [prompt, setPrompt] = useState(""); // User prompt to send to Ollama
+	const [response, setResponse] = useState(""); // Displayed response
+	const [isLoading, setIsLoading] = useState(false);
+	const textareaRef = useRef(null);
 
 	const handleSubmit = async (e) => {
-		e.preventDefault(); // Prevent default form submission
-		setIsLoading(true); // Set loading state to true
+		if (e) e.preventDefault(); // Prevent default form submit
+		setIsLoading(true);
+		setResponse(""); // Clear previous responses
 
 		try {
-			const result = await axios.post(
-				"http://localhost:11434/api/generate",
-				{
-					model: tinyllama, // Include the model parameter
-					prompt: prompt, // Send the prompt to the API
-				}
-			);
-			setResponse(result.data.response); // Set the response from the API
-		} catch (error) {
-			console.error("Error fetching response:", error); // Log any error
+			// The Ollama API supports streaming JSON lines
+			// This POST *should* return a streaming response (line-based JSON)
+			const res = await fetch("http://localhost:11434/api/generate", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					model: "tinyllama", // Adjust model name if needed
+					prompt: prompt,
+				}),
+			});
 
-			setResponse("An error occurred while fetching the response."); // Set error message
+			if (!res.ok) {
+				throw new Error(
+					`Error from server: ${res.status} ${res.statusText}`
+				);
+			}
+			if (!res.body) {
+				throw new Error(
+					"ReadableStream not yet supported in this environment or no body returned."
+				);
+			}
+
+			// Use a reader to process the stream manually
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder("utf-8");
+			let buffer = "";
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break; // End of stream
+
+				// Decode this chunk
+				buffer += decoder.decode(value, { stream: true });
+
+				// Split on newlines to handle multiple JSON objects per chunk
+				const lines = buffer.split("\n");
+
+				// Process all lines except possibly the last (which may be partial)
+				for (let i = 0; i < lines.length - 1; i++) {
+					const line = lines[i].trim();
+					if (!line) continue; // Skip empty lines
+
+					try {
+						// Each line is expected to be valid JSON:
+						// e.g. {"response":"some text","done":false}
+						const parsed = JSON.parse(line);
+
+						// Append the "response" field to our existing state
+						setResponse((prev) => prev + parsed.response);
+
+						// If the server says we're done, stop reading further
+						if (parsed.done) {
+							// Cancel any remaining reads and exit the loop
+							reader.cancel();
+							break;
+						}
+					} catch (err) {
+						console.error("JSON parse error on line:", line, err);
+					}
+				}
+
+				// Keep any incomplete line in the buffer for the next chunk
+				buffer = lines[lines.length - 1];
+			}
+		} catch (error) {
+			console.error("Error fetching response:", error);
+			setResponse("An error occurred while fetching the response.");
 		} finally {
-			setIsLoading(false); // Set loading state to false
+			setIsLoading(false);
 		}
 	};
 
-	// Add Ctrl + Enter shortcut
+	// Submit on Ctrl+Enter (or Cmd+Enter on macOS)
 	useEffect(() => {
-		const textarea = textareaRef.current; // Get the textarea element
-
+		const textarea = textareaRef.current;
 		const handleKeyDown = (event) => {
-			// Check if Ctrl (or Cmd on macOS) and Enter are pressed
 			if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-				event.preventDefault(); // Prevent default behavior (e.g., new line in textarea)
-				handleSubmit(); // Trigger the submit action
+				event.preventDefault();
+				handleSubmit();
 			}
 		};
-
-		// Add event listener to the textarea
 		textarea.addEventListener("keydown", handleKeyDown);
-
-		// Cleanup the event listener on component unmount
 		return () => {
 			textarea.removeEventListener("keydown", handleKeyDown);
 		};
-	}, [handleSubmit]); // Add handleSubmit to the dependency array
+	}, []);
 
 	return (
-		<div className="p-5 mx-auto max-w-[600px]">
-			<h1 className="mb-5 text-xl font-bold">Ollama Web UI</h1>
+		<div className="p-5 mx-auto text-left max-w-[600px]">
+			<h1 className="mb-5 text-xl font-bold">TinyLLama Web UI</h1>
 			<form onSubmit={handleSubmit}>
 				<textarea
-					ref={textareaRef} // Attach the ref to the textarea
+					ref={textareaRef}
 					value={prompt}
-					onChange={(e) => setPrompt(e.target.value)} // Update prompt state on change
+					onChange={(e) => setPrompt(e.target.value)}
 					placeholder="Enter your prompt here..."
 					className="p-2 mb-10 w-full ring-2 shadow-xl ring-blue-400/80"
 				/>
 
 				<button
 					type="submit"
-					disabled={isLoading} // Disable button while loading
-					className={`text-gray-500 rounded-sm  ${
-						isLoading ? "bg-gray-50" : ""
-					}`}
+					disabled={isLoading}
+					className={`text-gray-500 rounded-sm ${isLoading ? "bg-gray-50" : ""}`}
 				>
-					{isLoading ? "loading response" : "ctrl-enter to submit"} //
-					Button text based on loading state
+					{isLoading
+						? "loading response"
+						: "click or ctrl󰌑 to submit"}
 				</button>
 			</form>
 			{response && (
-				<div className="p-5 mt-10 text-gray-800 bg-gray-50 rounded-sm">
-					<h2>Response:</h2>
-					<p>{response}</p> // Display the API response
+				<div className="p-5 mt-10 text-gray-800 rounded-sm">
+					<h2></h2>
 				</div>
 			)}
 		</div>
