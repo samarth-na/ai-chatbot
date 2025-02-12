@@ -3,7 +3,7 @@
 @layer base {
 	/* Basic resets and defaults */
 	html {
-		@apply text-blue-950 bg-white;
+		@apply text-gray-950 bg-gray-100/50;
 	}
 
 	body {

@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 
+const saveChatToLocalStorage = (chat) => {
+	const existingChats = JSON.parse(localStorage.getItem("chats")) || [];
+	existingChats.push(chat);
+	localStorage.setItem("chats", JSON.stringify(existingChats));
+};
+
 function App() {
 	const [prompt, setPrompt] = useState("");
 	const [messages, setMessages] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [isStreaming, setIsStreaming] = useState(false);
 	const textareaRef = useRef(null);
 	const chatContainerRef = useRef(null);
+	let readerRef = useRef(null);
+
+	// Save chat object to local storage
 
 	// Handle streaming response from Ollama
-	const handleStream = async (reader) => {
+	const handleOutputStream = async (reader) => {
 		const decoder = new TextDecoder("utf-8");
 		let buffer = "";
 		let botMessage = "";
@@ -79,8 +89,8 @@ function App() {
 				);
 			if (!res.body)
 				throw new Error("Streaming not supported or no body returned.");
-
-			await handleStream(res.body.getReader());
+			console.log(res);
+			await handleOutputStream(res.body.getReader());
 		} catch (error) {
 			console.error("Error:", error);
 			setMessages((prev) => [
@@ -89,6 +99,14 @@ function App() {
 			]);
 		} finally {
 			setIsLoading(false);
+			const chatId = new Date().toISOString();
+			const chatObject = {
+				id: chatId,
+				heading: prompt,
+				messages: [...messages, { role: "user", content: prompt }],
+			};
+			console.log(chatObject);
+			saveChatToLocalStorage(chatObject);
 		}
 	};
 
@@ -112,14 +130,20 @@ function App() {
 				chatContainerRef.current.scrollHeight;
 		}
 	}, [messages]);
-
+	const stopStreaming = () => {
+		if (readerRef.current) {
+			readerRef.current.cancel(); // Cancel the reader
+		}
+		setIsStreaming(false); // Update streaming status
+	};
 	return (
 		<div className="flex flex-col flex-1 gap-2">
-			{" "}
-			{/* main wrpper*/}
+			{/* main wrapper*/}
 			<div className="overflow-hidden top-0 flex-1 mb-36">
 				<div className="flex flex-col p-4 min-w-[700px] border border-gray-200 mx-auto rounded-b-xl w-[50%] bg-white  h-full">
-					<h1 className="mb-4 text-xl text-gray-800">Ollama Chat</h1>
+					<h1 className="mb-4 font-mono text-xl text-center text-gray-800">
+						start messaging
+					</h1>
 
 					{/* Chat Messages */}
 					<div
@@ -134,8 +158,8 @@ function App() {
 								<div
 									className={`max-w-[80%] rounded-xl px-3 py-2  ${
 										message.role === "user"
-											? "bg-blue-100/50 text-gray-800"
-											: " text-gray-800"
+											? "bg-blue-100/50 text-gray-900"
+											: " text-gray-900"
 									}`}
 								>
 									<p className="whitespace-pre-wrap">
@@ -148,7 +172,7 @@ function App() {
 				</div>
 			</div>
 			{/* Input Area - Fixed at bottom */}
-			<div className="left-1/2 transform bg-white -translate-x-1/2 flex flex-col fixed bottom-0 min-w-[700px] rounded-md w-[50%]">
+			<div className="left-1/2 transform bg-gray-50 -translate-x-1/2 flex flex-col fixed bottom-0 min-w-[700px] rounded-md w-[50%]">
 				<form onSubmit={handleSubmit} className="flex flex-col">
 					<textarea
 						ref={textareaRef}
@@ -156,19 +180,21 @@ function App() {
 						onChange={(e) => setPrompt(e.target.value)}
 						placeholder="Type message"
 						rows="3"
-						className="flex-1 p-2 px-3 mb-2 bg-gray-100 rounded-xl border border-gray-200"
+						className="flex-1 p-2 px-3 mb-2 rounded-xl border border-gray-200 bg-blue-100/50"
 					/>
 					<button
 						type="submit"
-						disabled={isLoading}
-						className="mb-2 text-sm text-gray-500 rounded-lg cursor-pointer"
+						disabled={isLoading + !isStreaming}
+						onclick={stopStreaming}
+						className={`mb-2 text-sm text-gray-500  rounded-lg cursor-pointer hover:text-gray-800 ${isLoading ? "text-red-400 hover:text-red-500 font-bold" : ""}`}
 					>
-						{isLoading ? "Sending..." : "Ctrl󰌑 or click to send "}
+						{isLoading
+							? "cancel message"
+							: "Ctrl󰌑 or click to send"}
 					</button>
 				</form>
 			</div>
 		</div>
 	);
 }
-
 export default App;
