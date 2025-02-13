@@ -1,0 +1,27 @@
+
+{ type: "cors", url: "http://localhost:11434/api/generate", redirected: false, status: 200, ok: true, statusText: "OK", headers: Headers(1), body: ReadableStream, bodyUsed: true }
+<200b>
+body: ReadableStream { locked: true }
+<200b><200b>
+locked: true
+<200b><200b>
+<prototype>: ReadableStreamPrototype { cancel: cancel(), getReader: getReader(), pipeThrough: pipeThrough(), … }
+<200b>
+bodyUsed: true
+<200b>
+headers: Headers { "content-type" → "application/x-ndjson" }
+<200b>
+ok: true
+<200b>
+redirected: false
+<200b>
+status: 200
+<200b>
+statusText: "OK"
+<200b>
+type: "cors"
+<200b>
+url: "http://localhost:11434/api/generate"
+<200b>
+<prototype>: ResponsePrototype { clone: clone(), arrayBuffer: arrayBuffer(), blob: blob(), … }
+App.jsx:92:11

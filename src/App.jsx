@@ -11,6 +11,8 @@ function App() {
 	const [messages, setMessages] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isStreaming, setIsStreaming] = useState(false);
+
+	const [chat, setChat] = useState("qwen2.5:1.5b");
 	const textareaRef = useRef(null);
 	const chatContainerRef = useRef(null);
 	let readerRef = useRef(null);
@@ -78,7 +80,11 @@ function App() {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					model: "llama3.2:1b",
+					// model: "deepseek-r1:1.5b",
+					// model: "llama3.2:1b",
+					model: chat,
+
+					// model: "deepseek-coder:1.3b",
 					prompt: prompt,
 				}),
 			});
@@ -136,15 +142,40 @@ function App() {
 		}
 		setIsStreaming(false); // Update streaming status
 	};
+
+	const onChatChange = (e) => {
+		e.preventDefault();
+		setChat(e.target.textContent); // Use textContent to get the button's text
+	};
+
+	useEffect(() => {
+		console.log(chat);
+	}, [chat]); // Add chat as a dependency
 	return (
 		<div className="flex flex-col flex-1 gap-2">
 			{/* main wrapper*/}
 			<div className="overflow-hidden top-0 flex-1 mb-36">
 				<div className="flex flex-col p-4 min-w-[700px] border border-gray-200 mx-auto rounded-b-xl w-[50%] bg-white  h-full">
-					<h1 className="mb-4 font-mono text-xl text-center text-gray-800">
-						start messaging
-					</h1>
-
+					<div className="flex flex-row gap-2 justify-center">
+						<button
+							onClick={onChatChange} // Corrected to onClick
+							className="py-2 px-4 font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
+						>
+							llama3.2:1b
+						</button>
+						<button
+							onClick={onChatChange} // Corrected to onClick
+							className="py-2 px-4 font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
+						>
+							deepseek-r1:1.5b
+						</button>
+						<button
+							onClick={onChatChange} // Corrected to onClick
+							className="py-2 px-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
+						>
+							qwen2.5:1.5b
+						</button>
+					</div>
 					{/* Chat Messages */}
 					<div
 						ref={chatContainerRef}
