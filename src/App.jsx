@@ -151,19 +151,19 @@ function App() {
 					<div className="flex flex-row gap-2 justify-center">
 						<button
 							onClick={onChatChange} // Corrected to onClick
-							className="py-2 px-4 font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
+							className={`" p-2 px-4 text-gray-900 bg-gray-100 rounded-xl hover:bg-gray-200" ${chat === "llama3.2:1b" ? "bg-gray-300" : " "}`}
 						>
 							llama3.2:1b
 						</button>
 						<button
 							onClick={onChatChange} // Corrected to onClick
-							className="py-2 px-4 font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
+							className={`" px-4 text-gray-900 bg-gray-100 rounded-xl hover:bg-gray-200" ${chat === "deepseek-r1:1.5b" ? "bg-gray-300" : " "}`}
 						>
 							deepseek-r1:1.5b
 						</button>
 						<button
 							onClick={onChatChange} // Corrected to onClick
-							className="py-2 px-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
+							className={`" px-4 text-gray-900 bg-gray-100 rounded-xl hover:bg-gray-200" ${chat === "qwen2.5:1.5b" ? "bg-gray-300" : " "}`}
 						>
 							qwen2.5:1.5b
 						</button>
