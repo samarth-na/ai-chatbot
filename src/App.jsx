@@ -10,12 +10,10 @@ function App() {
 	const [prompt, setPrompt] = useState("");
 	const [messages, setMessages] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
-	const [isStreaming, setIsStreaming] = useState(false);
 
 	const [chat, setChat] = useState("qwen2.5:1.5b");
 	const textareaRef = useRef(null);
 	const chatContainerRef = useRef(null);
-	let readerRef = useRef(null);
 
 	// Save chat object to local storage
 
@@ -136,12 +134,6 @@ function App() {
 				chatContainerRef.current.scrollHeight;
 		}
 	}, [messages]);
-	const stopStreaming = () => {
-		if (readerRef.current) {
-			readerRef.current.cancel(); // Cancel the reader
-		}
-		setIsStreaming(false); // Update streaming status
-	};
 
 	const onChatChange = (e) => {
 		e.preventDefault();
