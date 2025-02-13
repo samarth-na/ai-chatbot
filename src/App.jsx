@@ -207,8 +207,7 @@ function App() {
 					/>
 					<button
 						type="submit"
-						disabled={isLoading + !isStreaming}
-						onclick={stopStreaming}
+						disabled={isLoading}
 						className={`mb-2 text-sm text-gray-500  rounded-lg cursor-pointer hover:text-gray-800 ${isLoading ? "text-red-400 hover:text-red-500 font-bold" : ""}`}
 					>
 						{isLoading
