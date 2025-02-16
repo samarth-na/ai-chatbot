@@ -8,16 +8,28 @@ tags:
 will add readme later :p
 
 
-## dependcies 
-- node
-- ollama
+## dependcies
+- [ node ](https://nodejs.org/en)
+- [ ollama ](https://ollama.com/)
 - listed models `see app.jsx chatOptions array`
 
-## steps 
-- `npm i` 
-- `ollama install <model names>`
-- `npm run dev`
+---
 
+## steps
+- install node dependcies
+```
+npm i
+```
+- install models with ollama
+```
+ollama install <model-name>
+```
+- run the app
+```
+npm run dev
+```
+
+---
 
 ## penging
 - [ ] add a real proper readme 
@@ -43,6 +55,8 @@ will add readme later :p
 - [x] add chat history 
 - [x] add options to switch chat 
 - [x] create chat interface
+
+---
 
 > these are the tasks for initial design my actual aim is  for it be an
 > assistant such as google's ,siri and such but an acutual useable like setting
