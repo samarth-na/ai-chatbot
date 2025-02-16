@@ -1,7 +1,8 @@
 ---
-id: chatbot
+id: assistant
 aliases: []
-tags: []
+tags:
+  - readme
 ---
 
 will add readme later :p
@@ -47,5 +48,5 @@ will add readme later :p
 > assistant such as google's ,siri and such but an acutual useable like setting
 > up timers event on calendar reading the messages and such it needs alot more
 > capabilites for that to which i hope i can accomplish im making this for
-> myself first and foremost not to turn this  into an start-up
+> myself first and foremost not to turn this into an start-up
 
