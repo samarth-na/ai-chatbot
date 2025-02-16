@@ -9,6 +9,14 @@ const Sidebar = () => {
 
 	return (
 		<div className="flex">
+			<div className="flex-1 p-10">
+				<button
+					onClick={toggleSidebar}
+					className="top-2 text-white bg-gray-800 rounded"
+				>
+					{isOpen ? "" : "Open Sidebar"}
+				</button>
+			</div>
 			{/* Sidebar */}
 			<div
 				className={`bg-gray-800 text-white h-screen w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform ${isOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out`}
@@ -66,16 +74,6 @@ const Sidebar = () => {
 			</div>
 
 			{/* Main Content */}
-			<div className="flex-1 p-10">
-				<button
-					onClick={toggleSidebar}
-					className="p-2 text-white bg-gray-800 rounded"
-				>
-					{isOpen ? "Close Sidebar" : "Open Sidebar"}
-				</button>
-				<h1 className="text-2xl font-bold">Main Content</h1>
-				<p>This is the main content area.</p>
-			</div>
 		</div>
 	);
 };

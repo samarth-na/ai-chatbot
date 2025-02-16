@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const saveChatToLocalStorage = (chat) => {
 	const existingChats = JSON.parse(localStorage.getItem("chats")) || [];
@@ -34,7 +34,8 @@ function App() {
 
 				try {
 					const parsed = JSON.parse(line);
-					assistantMessage += parsed.response;
+					// For the chat endpoint, the streaming token is in parsed.message.content
+					assistantMessage += parsed.message.content;
 					setMessages((prev) => {
 						const last = prev[prev.length - 1];
 						if (last?.role === "assistant") {
@@ -62,21 +63,24 @@ function App() {
 		if (!prompt.trim()) return;
 
 		const currentPrompt = prompt;
+		const newUserMessage = { role: "user", content: currentPrompt };
+		const conversationToSend = [...messages, newUserMessage];
+
+		// Update UI: add the user message...
 		setIsLoading(true);
-		setMessages((prev) => [
-			...prev,
-			{ role: "user", content: currentPrompt },
-			{ role: "assistant", content: "" },
-		]);
+		setMessages(conversationToSend); // ...and add an assistant placeholder (not sent to the API)
+		setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 		setPrompt("");
 
+		let assistantMessage = "";
 		try {
-			const res = await fetch("http://localhost:11434/api/generate", {
+			const res = await fetch("http://localhost:11434/api/chat", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				// IMPORTANT: the request body now includes the "messages" array that ends with a user message.
 				body: JSON.stringify({
 					model: chat,
-					prompt: currentPrompt,
+					messages: conversationToSend,
 				}),
 			});
 
@@ -86,7 +90,6 @@ function App() {
 				);
 			if (!res.body)
 				throw new Error("Streaming not supported or no body returned.");
-
 			const reader = res.body.getReader();
 			setStreamReader(reader);
 			await handleOutputStream(reader);
@@ -99,12 +102,14 @@ function App() {
 		} finally {
 			setIsLoading(false);
 			const chatId = new Date().toISOString();
+			// Save the chat with the full conversation:
 			const chatObject = {
 				id: chatId,
 				heading: currentPrompt,
+				// Here we save the conversation including the streaming assistant message
 				messages: [
-					...messages,
-					{ role: "user", content: currentPrompt },
+					...conversationToSend,
+					{ role: "assistant", content: assistantMessage },
 				],
 			};
 			saveChatToLocalStorage(chatObject);
@@ -123,29 +128,41 @@ function App() {
 		e.preventDefault();
 		setChat(e.target.textContent);
 	};
-
 	useEffect(() => {
-		if (chatContainerRef.current) {
-			chatContainerRef.current.scrollTop =
-				chatContainerRef.current.scrollHeight;
-		}
-	}, [messages]);
+		const handleKeyDown = (event) => {
+			if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+				handleCancelStream();
+			}
+		};
+		document.addEventListener("keydown", handleKeyDown); // Add global event listener
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown); // Cleanup on unmount
+		};
+	}, [handleCancelStream]);
+
+	// useEffect(() => {
+	// 	if (dummyRef.current) {
+	// 		dummyRef.current.scrollIntoView({ behavior: "smooth" });
+	// 	}
+	// }, [messages]);
 
 	// Refactored chat buttons to remove repetition
 	const chatOptions = [
-		{
-			model: "qwen2.5-coder:1.5b",
-		},
-		{
-			model: "llama3.2:1b",
-		},
-		{
-			model: "deepseek-r1:1.5b",
-		},
-		{
-			model: "qwen2.5:1.5b",
-		},
+		{ model: "qwen2.5-coder:1.5b" },
+		{ model: "deepscaler:latest" },
+		{ model: "llama3.2:1b" },
+		{ model: "deepseek-r1:1.5b" },
+		{ model: "qwen2.5:1.5b" },
 	];
+
+	const chatMap = new Map([
+		["qwen2.5-coder:1.5b", "qwen2.5-coder"],
+		["deepscaler:latest", "deepscaler"],
+		["llama3.2:1b", "llama3.2"],
+		["deepseek-r1:1.5b", "deepseek-r1"],
+		["qwen2.5:1.5b", "qwen2.5"],
+	]);
+	console.log(chatMap);
 
 	return (
 		<div className="flex flex-col flex-1 gap-2">
@@ -156,7 +173,7 @@ function App() {
 							key={model}
 							onClick={changeChat}
 							className={` p-2 px-4 text-gray-900 bg-gray-50 cursor-pointer rounded-xl hover:bg-gray-200 ${
-								chat === model ? "bg-gray-200" : " "
+								chat === model ? "bg-gray-200" : ""
 							}`}
 						>
 							{model}
@@ -181,7 +198,7 @@ function App() {
 									className={`max-w-[80%] rounded-xl px-3 py-2 ${
 										message.role === "user"
 											? "bg-blue-100/50 text-gray-900"
-											: " text-gray-900"
+											: "text-gray-900"
 									}`}
 								>
 									<p className="whitespace-pre-wrap">
@@ -200,10 +217,7 @@ function App() {
 						value={prompt}
 						onChange={(e) => setPrompt(e.target.value)}
 						onKeyDown={(event) => {
-							if (
-								(event.ctrlKey || event.metaKey) &&
-								event.key === "Enter"
-							) {
+							if (event.key === "Enter") {
 								event.preventDefault();
 								handleSubmit();
 							}
@@ -214,10 +228,10 @@ function App() {
 					/>
 					<button
 						type={isLoading ? "button" : "submit"}
-						onClick={isLoading ? handleCancelStream : undefined}
+						onClick={handleCancelStream}
 						disabled={false}
-						className={` mb-2 text-sm text-gray-500 rounded-lg cursor-pointer hover:text-gray-800 ${
-							isLoading ? "text-red-400 hover:text-red-500 " : ""
+						className={`mb-2 text-sm text-gray-500 rounded-lg cursor-pointer hover:text-gray-800 ${
+							isLoading ? "text-red-400 hover:text-red-500" : ""
 						}`}
 					>
 						{isLoading
